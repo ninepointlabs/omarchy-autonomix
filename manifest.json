@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "ninepointlabs.autonomix",
+  "name": "Autonomix",
+  "version": "0.1.0",
+  "author": "Ninepoint Labs",
+  "license": "MIT",
+  "description": "Apps installed from GitHub releases in the Omarchy bar. Track repos, see which have updates, and install or update them with autonomix-cli.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Autonomix",
+    "description": "Update count for apps tracked by autonomix-cli; click to add repos and install or update apps.",
+    "category": "System",
+    "aliases": [
+      "autonomix",
+      "updates",
+      "github",
+      "releases",
+      "packages"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "checkIntervalMin": 360,
+      "showCount": true
+    },
+    "schema": [
+      {
+        "key": "checkIntervalMin",
+        "type": "integer",
+        "label": "Check interval (minutes)",
+        "min": 30,
+        "max": 1440,
+        "step": 30,
+        "defaultValue": 360,
+        "description": "How often GitHub is checked for new releases. Each check costs one GitHub API request per tracked app; without GITHUB_TOKEN the limit is 60 an hour."
+      },
+      {
+        "key": "showCount",
+        "type": "boolean",
+        "label": "Show the update count next to the icon",
+        "defaultValue": true
+      }
+    ]
+  }
+}
