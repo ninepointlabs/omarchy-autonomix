@@ -58,8 +58,8 @@ Process {
     if (!_started || _timedOut) settle(127)
   }
 
-  Timer {
-    id: deadline
+  // Process has no default property, so the timer is held in a property.
+  property Timer deadline: Timer {
     repeat: false
     onTriggered: {
       if (!job.running) return
