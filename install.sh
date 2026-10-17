@@ -29,7 +29,7 @@ fi
 stage="$(/usr/bin/mktemp -d "$parent/.autonomix.staging.XXXXXX")"
 trap '/usr/bin/rm -rf "$stage"' EXIT
 
-/usr/bin/cp "$src/manifest.json" "$src/Model.js" "$src/Service.qml" "$src/CliJob.qml" "$src/BarWidget.qml" "$src/Panel.qml" \
+/usr/bin/cp "$src/manifest.json" "$src/Model.js" "$src/Service.qml" "$src/CliJob.qml" "$src/BarWidget.qml" "$src/Panel.qml" "$src/AboutView.qml" \
   "$src/README.md" "$src/LICENSE" "$stage/"
 
 omarchy_bin=/usr/share/omarchy/bin/omarchy

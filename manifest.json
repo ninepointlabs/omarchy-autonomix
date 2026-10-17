@@ -3,7 +3,7 @@
   "id": "ninepointlabs.autonomix",
   "name": "Autonomix",
   "version": "0.1.0",
-  "author": "Ninepoint Labs",
+  "author": "Nine Point Labs",
   "license": "MIT",
   "description": "Apps installed from GitHub releases in the Omarchy bar. Track repos, see which have updates, and install or update them with autonomix-cli.",
   "kinds": [

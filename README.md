@@ -13,6 +13,7 @@ The plugin is a frontend for [autonomix-cli](https://github.com/ninepointlabs/au
   - track a repo by typing `owner/repo` or pasting a GitHub URL
   - click an app to open its release page
   - the trash icon (click twice) stops tracking an app; it doesn't uninstall anything
+  - the 󰋽 button next to the refresh button shows **About**: the version, license (readable in place), Nine Point Labs, the versions it's built with (including your autonomix-cli), what the widget does with your data, and the support address, [help@ninepointlabs.com](mailto:help@ninepointlabs.com), with *Email*, *Copy* and *Copy version details* buttons. <kbd>Esc</kbd> or the close button goes back to the list
 - **Checks:** GitHub is checked on startup when the last check is stale, and then every six hours (configurable). Opening the panel only re-reads what's installed locally, which costs nothing.
 
 Installs need root, so autonomix-cli runs the package manager through `pkexec` and you get Omarchy's polkit password dialog.
@@ -44,6 +45,7 @@ Each check costs one GitHub API request per tracked app. Without a token GitHub 
 ```bash
 omarchy-shell ninepointlabs.autonomix toggle   # also open, close, isOpen
 omarchy-shell ninepointlabs.autonomix check    # check GitHub now
+omarchy-shell ninepointlabs.autonomix about    # open the panel on its About page
 ```
 
 ## How it runs things
@@ -53,7 +55,7 @@ The only program the plugin starts is autonomix-cli, from one of the two fixed p
 ## Development
 
 ```bash
-node tests/model.test.cjs
+node tests/model.test.cjs   # includes the About facts, checked against manifest.json, LICENSE and the first commit
 omarchy plugin validate "$PWD"
 ```
 

@@ -45,6 +45,29 @@ Panel {
 
   readonly property string selfRepo: "ninepointlabs/autonomix-cli"
 
+  // The About page replaces the app list inside the same panel. Its files
+  // (manifest.json for the version, LICENSE) are read only once it is shown.
+  property bool showAbout: false
+  property bool aboutLoaded: false
+  readonly property string pluginDir: {
+    var text = String(Qt.resolvedUrl("."))
+    if (text.indexOf("file://") === 0) text = decodeURIComponent(text.substring(7))
+    return text.length > 1 && text.charAt(text.length - 1) === "/" ? text.substring(0, text.length - 1) : text
+  }
+
+  function setAbout(on) {
+    showAbout = !!on
+    if (showAbout) { aboutLoaded = true; panelFlick.contentY = 0 }
+  }
+
+  function showAboutPage() {
+    setAbout(true)
+    if (!opened) open()
+  }
+
+  FileView { id: manifestFile; path: root.aboutLoaded ? root.pluginDir + "/manifest.json" : ""; printErrors: false }
+  FileView { id: licenseFile; path: root.aboutLoaded ? root.pluginDir + "/LICENSE" : ""; printErrors: false }
+
   function switchPanel(direction) {
     if (root.bar && typeof root.bar.switchPanelFrom === "function")
       return root.bar.switchPanelFrom(root.barIdentity, direction)
@@ -70,7 +93,7 @@ Panel {
   implicitHeight: 1
 
   onOpenedChanged: {
-    if (!opened) { confirmRemove = ""; return }
+    if (!opened) { confirmRemove = ""; showAbout = false; return }
     if (service) service.list()
   }
 
@@ -98,30 +121,46 @@ Panel {
     bar: root.bar
     open: root.opened
     centerOnBar: true
-    focusTarget: addField
+    focusTarget: root.showAbout ? keyCatcher : addField
     contentWidth: panel.fittedContentWidth(Style.space(440))
-    contentHeight: panel.fittedContentHeight(mainColumn.implicitHeight + Style.space(24), Style.space(600))
+    contentHeight: panel.fittedContentHeight(panelFlick.contentHeight + Style.space(24), Style.space(600))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       blocked: addField.activeFocus
-      onCloseRequested: root.close()
+      // Esc steps back out of About before it closes the panel.
+      onCloseRequested: root.showAbout ? root.setAbout(false) : root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
     Flickable {
       id: panelFlick
       anchors.fill: parent
       contentWidth: width
-      contentHeight: mainColumn.implicitHeight
+      contentHeight: root.showAbout ? aboutView.implicitHeight : mainColumn.implicitHeight
       clip: true
       boundsBehavior: Flickable.StopAtBounds
       flickableDirection: Flickable.VerticalFlick
       interactive: contentHeight > height
       ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
+    AboutView {
+      id: aboutView
+      objectName: "aboutView"
+      visible: root.showAbout
+      width: panelFlick.width
+      foreground: root.foreground
+      accent: root.accent
+      fontFamily: root.fontFamily
+      version: Model.manifestVersion(manifestFile.loaded ? manifestFile.text() : "")
+      licenseText: licenseFile.loaded ? licenseFile.text() : ""
+      cliVersion: root.service ? root.service.cliVersion : ""
+      onBackRequested: root.setAbout(false)
+    }
+
     Column {
       id: mainColumn
+      visible: !root.showAbout
       width: panelFlick.width
       spacing: Style.space(10)
 
@@ -133,7 +172,7 @@ Panel {
         Column {
           id: titleColumn
           anchors.left: parent.left
-          anchors.right: checkButton.left
+          anchors.right: aboutButton.left
           anchors.rightMargin: Style.space(8)
           spacing: Style.space(2)
 
@@ -157,6 +196,19 @@ Panel {
             font.pixelSize: Style.font.bodySmall
             wrapMode: Text.Wrap
           }
+        }
+
+        PanelActionButton {
+          id: aboutButton
+          objectName: "aboutButton"
+          anchors.right: checkButton.left
+          anchors.rightMargin: Style.space(4)
+          anchors.verticalCenter: parent.verticalCenter
+          iconText: "󰋽"
+          tooltipText: "About Autonomix"
+          foreground: root.foreground
+          fontFamily: root.fontFamily
+          onClicked: root.setAbout(true)
         }
 
         PanelActionButton {

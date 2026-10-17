@@ -120,4 +120,63 @@ assert.equal(m.needsCheck([], 6 * hour, now), false);
 assert.equal(m.conciseError("line one\nlast line\n\n"), "last line");
 assert.equal(m.conciseError(""), "autonomix-cli failed");
 
+// About: facts from the repo, versions and the support email.
+{
+  const { execFileSync } = require("node:child_process");
+  const manifest = fs.readFileSync(path.join(root, "manifest.json"), "utf8");
+  assert.equal(m.manifestVersion(manifest), JSON.parse(manifest).version);
+  assert.equal(m.manifestVersion("not json"), "");
+  assert.equal(m.manifestVersion('{"version":"1.0 <b>"}'), "");
+  assert.equal(JSON.parse(manifest).author, "Nine Point Labs");
+  assert.equal(m.ABOUT.name, JSON.parse(manifest).name);
+  assert.equal(m.ABOUT.organization, "Nine Point Labs");
+  assert.equal(m.ABOUT.supportEmail, "help@ninepointlabs.com");
+  const license = fs.readFileSync(path.join(root, "LICENSE"), "utf8");
+  assert.ok(license.startsWith(m.ABOUT.license));
+  assert.ok(license.includes(m.ABOUT.copyright.replace("©", "Copyright (c)")));
+  const reflowed = m.reflowLicense(license);
+  assert.ok(reflowed.startsWith("MIT License\n\nCopyright (c) 2026 Nine Point Labs\n\nPermission is hereby granted"));
+  assert.ok(!reflowed.includes("a copy\nof"));
+  try {
+    const first = execFileSync("git", ["log", "--reverse", "--format=%ad", "--date=format:%B %Y"],
+      { cwd: root, encoding: "utf8" }).split("\n")[0];
+    assert.equal(m.ABOUT.created, first, "created date is the first commit's month");
+  } catch (e) {
+    if (e instanceof assert.AssertionError) throw e;
+    console.log("skipped created-date check (no git history)");
+  }
+
+  assert.equal(m.cliVersion("0.4.2\n"), "0.4.2");
+  assert.equal(m.cliVersion("autonomix-cli version 0.5.0-rc1"), "0.5.0-rc1");
+  assert.equal(m.cliVersion("dev"), "");
+  assert.equal(m.cliVersion(""), "");
+  assert.equal(m.probedVersion((major, minor) => major === 6 && minor <= 11, 6), "6.11");
+  assert.equal(m.probedVersion((major, minor) => major === 0 && minor <= 3, 0), "0.3");
+  assert.equal(m.probedVersion(() => false, 6), "");
+  assert.equal(m.probedVersion(null, 6), "");
+  assert.equal(m.builtWith("", "", ""), "Quickshell ?, Qt ?, autonomix-cli not found");
+
+  const details = m.aboutDetails("0.1.0", "0.3", "6.11", "0.4.2", "Hyprland, wayland");
+  assert.equal(details, "Autonomix 0.1.0\nQuickshell 0.3, Qt 6.11, autonomix-cli 0.4.2\nHyprland, wayland");
+  const mail = m.supportMailto("0.1.0", details);
+  assert.ok(mail.startsWith("mailto:help@ninepointlabs.com?subject=Autonomix%200.1.0&body="));
+  assert.equal(decodeURIComponent(mail.split("&body=")[1]), "\n\n--\n" + details);
+
+  // The privacy statement: what the CLI does on the network, and every host
+  // that appears anywhere in the plugin's code is named in it.
+  for (const phrase of ["no telemetry", "makes no network requests itself", "api.github.com", "pkexec",
+    "GITHUB_TOKEN", "~/.autonomix/config.json", "~/.config/omarchy/shell.json"])
+    assert.ok(m.PRIVACY.includes(phrase), phrase);
+  const hosts = new Set();
+  for (const f of fs.readdirSync(root)) {
+    if (!/\.(qml|js|sh)$/.test(f)) continue;
+    const text = fs.readFileSync(path.join(root, f), "utf8");
+    for (const match of text.matchAll(/https?:\/\/([A-Za-z0-9.-]+)/g)) hosts.add(match[1].replace(/^www\./, ""));
+    for (const match of text.matchAll(/\b((?:[a-z0-9-]+\.)+(?:com|org|io|net|dev|gg|in))\b/g)) hosts.add(match[1]);
+  }
+  hosts.delete("ninepointlabs.com"); // the support address, opened only in your mail app
+  assert.ok(hosts.size > 0);
+  for (const host of hosts) assert.ok(m.PRIVACY.includes(host), "privacy text must name " + host);
+}
+
 console.log("model tests passed");

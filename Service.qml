@@ -22,6 +22,8 @@ Item {
 
   property string cli: ""
   property bool cliMissing: false
+  // From the `--version` probe that finds the CLI; shown on the About page.
+  property string cliVersion: ""
 
   property var apps: []
   property bool loaded: false
@@ -203,9 +205,10 @@ Item {
   CliJob {
     id: cliProbe
     jobEnvironment: root.processEnvironment
-    onJobFinished: function(exitCode) {
+    onJobFinished: function(exitCode, stdoutText) {
       if (exitCode !== 0) { root._candidate++; root.probeNext(); return }
       root.cli = Model.trustedCli(Model.CLI_CANDIDATES[root._candidate])
+      root.cliVersion = Model.cliVersion(stdoutText)
       root.cliMissing = false
       root.next()
     }
