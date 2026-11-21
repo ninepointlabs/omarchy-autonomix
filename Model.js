@@ -122,6 +122,31 @@ function conciseError(text, fallback) {
   return fallback || "autonomix-cli failed"
 }
 
+// autonomix-cli 0.4.4+ reports a used-up GitHub API limit as "GitHub API
+// rate limit reached[, resets at HH:MM][; <tip>]". Its tip (GH_TOKEN or
+// `gh auth login`) is for a terminal: the widget runs the CLI in a fixed
+// environment where a gh login isn't visible, so it says what works here.
+var RATE_LIMIT = /^GitHub API rate limit reached(?:, resets at ([0-2][0-9]:[0-5][0-9]))?/
+
+function isRateLimit(error) {
+  return RATE_LIMIT.test(String(error || ""))
+}
+
+// The panel's status line for an error, with rate limits reworded.
+function explainError(error, hasToken) {
+  var match = RATE_LIMIT.exec(String(error || ""))
+  if (!match) return error
+  return "GitHub rate limit reached" + (match[1] ? ", resets at " + match[1] : "")
+    + (hasToken ? "" : ". Set GH_TOKEN for the shell to raise it")
+}
+
+// The status line when any app failed on the rate limit, or "".
+function rateLimitStatus(apps, hasToken) {
+  for (var i = 0; i < apps.length; i++)
+    if (isRateLimit(apps[i].error)) return explainError(apps[i].error, hasToken)
+  return ""
+}
+
 function rank(status) {
   var order = { update_available: 0, failed: 1, not_installed: 2, unchecked: 3, up_to_date: 4, unmanaged: 5 }
   return order[status] === undefined ? 9 : order[status]
@@ -147,7 +172,12 @@ function subtitle(app) {
   case "not_installed": return app.latest !== "" ? "Not installed · " + app.latest + " available" : "Not installed"
   case "unchecked": return app.installed + " · not checked yet"
   case "unmanaged": return "Installed outside the package manager" + (app.installedType ? " (" + app.installedType + ")" : "")
-  case "failed": return app.error !== "" ? app.error : "Check failed"
+  case "failed":
+    if (isRateLimit(app.error)) {
+      var reset = RATE_LIMIT.exec(app.error)[1]
+      return "GitHub rate limit" + (reset ? " · resets at " + reset : "")
+    }
+    return app.error !== "" ? app.error : "Check failed"
   }
   return ""
 }
@@ -193,8 +223,9 @@ var PRIVACY = "No account and no telemetry. The widget makes no network requests
   + "each tracked app when it checks for updates (at startup if the last check is stale, then on the check "
   + "interval, or when you ask for a check) and when you add, update or install an app, and it downloads the "
   + "package from the app's github.com release when you install or update. Installing runs your package "
-  + "manager through pkexec, so you see the polkit password dialog. If GITHUB_TOKEN or GH_TOKEN is set, it is "
-  + "passed to autonomix-cli and sent only to api.github.com. Your tracked apps are kept in "
+  + "manager through pkexec, so you see the polkit password dialog. If GITHUB_TOKEN or GH_TOKEN is set in the "
+  + "shell's environment, it is passed to autonomix-cli and sent only to api.github.com; the widget doesn't "
+  + "read your GitHub CLI login. Your tracked apps are kept in "
   + "~/.autonomix/config.json by autonomix-cli, and the widget's settings in ~/.config/omarchy/shell.json. "
   + "Release pages and the Email button open in your own browser or mail app."
 

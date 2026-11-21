@@ -20,6 +20,9 @@ Item {
   readonly property var processEnvironment: Model.processEnvironment(
     Quickshell.env("HOME"), Quickshell.env("GITHUB_TOKEN") || Quickshell.env("GH_TOKEN"))
 
+  // Whether a GitHub token reaches autonomix-cli (5000 requests an hour, not 60).
+  readonly property bool hasToken: processEnvironment.GITHUB_TOKEN !== undefined
+
   property string cli: ""
   property bool cliMissing: false
   // From the `--version` probe that finds the CLI; shown on the About page.
@@ -131,7 +134,7 @@ Item {
     } else {
       var parsed = Model.parseOutput(stdoutText)
       if (!parsed.ok) {
-        lastError = parsed.error !== "" ? parsed.error : Model.conciseError(stderrText)
+        lastError = parsed.error !== "" ? Model.explainError(parsed.error, hasToken) : Model.conciseError(stderrText)
       } else {
         apply(job, parsed, exitCode)
       }
@@ -149,7 +152,7 @@ Item {
       apps = Model.sortApps(parsed.apps)
       loaded = true
       revision += 1
-      if (exitCode !== 0) lastError = "Some apps could not be checked"
+      if (exitCode !== 0) lastError = Model.rateLimitStatus(apps, hasToken) || "Some apps could not be checked"
       return
     }
 
@@ -157,7 +160,7 @@ Item {
     for (var i = 0; i < parsed.apps.length; i++)
       if (parsed.apps[i].error !== "") failed.push(parsed.apps[i].name + ": " + parsed.apps[i].error)
     if (failed.length > 0) {
-      lastError = Model.cleanText(failed.join("; "), 200)
+      lastError = Model.rateLimitStatus(parsed.apps, hasToken) || Model.cleanText(failed.join("; "), 200)
     } else if (job.op === "add" && parsed.apps.length > 0) {
       flash("Tracking " + parsed.apps[0].name)
     } else if (job.op === "remove") {

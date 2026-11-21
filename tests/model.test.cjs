@@ -179,4 +179,27 @@ assert.equal(m.conciseError(""), "autonomix-cli failed");
   for (const host of hosts) assert.ok(m.PRIVACY.includes(host), "privacy text must name " + host);
 }
 
+// Rate limits: autonomix-cli 0.4.4's message, reworded for the widget.
+{
+  const cliMsg = "GitHub API rate limit reached, resets at 14:32; set GH_TOKEN or run `gh auth login` to raise the limit from 60 to 5000 requests per hour";
+  assert.equal(m.isRateLimit(cliMsg), true);
+  assert.equal(m.isRateLimit("github api returned status: 403"), false);
+  assert.equal(m.isRateLimit(""), false);
+  assert.equal(m.explainError(cliMsg, false), "GitHub rate limit reached, resets at 14:32. Set GH_TOKEN for the shell to raise it");
+  assert.equal(m.explainError(cliMsg, true), "GitHub rate limit reached, resets at 14:32");
+  assert.equal(m.explainError("GitHub API rate limit reached", true), "GitHub rate limit reached");
+  assert.equal(m.explainError("Some other error", false), "Some other error");
+
+  const out = m.parseOutput(JSON.stringify([
+    { name: "A", repo: "o/a", status: "up_to_date", installed: "1.0" },
+    { name: "B", repo: "o/b", status: "failed", error: cliMsg },
+  ]));
+  const failed = out.apps.find((a) => a.repo === "o/b");
+  assert.equal(m.subtitle(failed), "GitHub rate limit · resets at 14:32");
+  assert.equal(m.subtitle({ status: "failed", error: "GitHub API rate limit reached" }), "GitHub rate limit");
+  assert.equal(m.subtitle({ status: "failed", error: "boom" }), "boom");
+  assert.equal(m.rateLimitStatus(out.apps, false), "GitHub rate limit reached, resets at 14:32. Set GH_TOKEN for the shell to raise it");
+  assert.equal(m.rateLimitStatus(out.apps.filter((a) => a.repo === "o/a"), false), "");
+}
+
 console.log("model tests passed");

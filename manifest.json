@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ninepointlabs.autonomix",
   "name": "Autonomix",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Nine Point Labs",
   "license": "MIT",
   "description": "Apps installed from GitHub releases in the Omarchy bar. Track repos, see which have updates, and install or update them with autonomix-cli.",
@@ -41,7 +41,7 @@
         "max": 1440,
         "step": 30,
         "defaultValue": 360,
-        "description": "How often GitHub is checked for new releases. Each check costs one GitHub API request per tracked app; without GITHUB_TOKEN the limit is 60 an hour."
+        "description": "How often GitHub is checked for new releases. Each check costs one GitHub API request per tracked app; without GITHUB_TOKEN or GH_TOKEN in the shell's environment the limit is 60 an hour."
       },
       {
         "key": "showCount",
