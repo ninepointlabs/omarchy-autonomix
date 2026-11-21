@@ -94,7 +94,14 @@ Panel {
 
   onOpenedChanged: {
     if (!opened) { confirmRemove = ""; showAbout = false; return }
+    if (service && service.takeAboutRequest()) setAbout(true)
     if (service) service.list()
+  }
+
+  // `omarchy-shell ninepointlabs.autonomix about` while this panel is open.
+  Connections {
+    target: root.service
+    function onAboutRequested() { if (root.opened && root.service.takeAboutRequest()) root.setAbout(true) }
   }
 
   Timer {
