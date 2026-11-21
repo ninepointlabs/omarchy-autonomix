@@ -38,7 +38,9 @@ omarchy plugin enable ninepointlabs.autonomix
 | `checkIntervalMin` | `360` | Minutes between GitHub checks (30–1440) |
 | `showCount` | `true` | Show the update count next to the icon |
 
-Each check costs one GitHub API request per tracked app. Without a token GitHub allows 60 an hour; if `GITHUB_TOKEN` or `GH_TOKEN` is set in the shell's environment, the widget passes it on and the limit goes up to 5000.
+Each check costs one GitHub API request per tracked app. Without a token GitHub allows 60 an hour, shared with anything else on your machine that talks to the GitHub API, including `autonomix-cli` in a terminal. If `GITHUB_TOKEN` or `GH_TOKEN` is set in the shell's environment, the widget passes it on and the limit goes up to 5000.
+
+The widget runs `autonomix-cli` with a fixed, minimal environment, so autonomix-cli's fallback to your GitHub CLI login (`gh auth token`, 0.4.4 and later) doesn't apply here. Set the token where Hyprland can pass it to the shell, for example `hl.env("GH_TOKEN", "<token>")` in `~/.config/hypr/hyprland.lua`, then restart the shell. When the limit runs out, the panel says so and when it resets.
 
 ## IPC
 
