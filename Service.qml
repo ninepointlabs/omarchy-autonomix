@@ -78,6 +78,53 @@ Item {
     return true
   }
 
+  // ----------------------------------------------------------------- IPC --
+  // `omarchy-shell ninepointlabs.autonomix <method>`. The handler lives here,
+  // on the one shared service, not on the bar widget: there is a bar widget
+  // per monitor and Quickshell keeps only the first handler registered for a
+  // target, which after a reload can be a widget that is going away. Panel
+  // calls go through the shell, which picks the copy on the focused monitor.
+
+  readonly property string pluginId: "ninepointlabs.autonomix"
+
+  // Set by the `about` call and taken by whichever panel is open, because the
+  // shell passes no payload to bar-widget panels.
+  property bool aboutPending: false
+  signal aboutRequested()
+
+  function takeAboutRequest() {
+    if (!aboutPending) return false
+    aboutPending = false
+    return true
+  }
+
+  function openPanel() { return shell ? shell.summon(pluginId, "") === true : false }
+  function closePanel() { return shell ? shell.hide(pluginId) === true : false }
+  function togglePanel() { return shell ? shell.toggle(pluginId, "") === true : false }
+  function panelOpen() { return shell ? shell.isPluginOpen(pluginId) === true : false }
+
+  function showAbout() {
+    aboutPending = true
+    if (!panelOpen() && !openPanel()) { aboutPending = false; return }
+    aboutRequested()
+  }
+
+  IpcHandler {
+    target: root.pluginId
+    // Only the shell's shared service answers. Each panel also holds an
+    // inactive fallback Service, which must not register a second handler.
+    enabled: root.active && root.shell !== null
+
+    function open(): void { root.openPanel() }
+    function close(): void { root.closePanel() }
+    function show(): void { root.openPanel() }
+    function hide(): void { root.closePanel() }
+    function toggle(): void { root.togglePanel() }
+    function about(): void { root.showAbout() }
+    function isOpen(): string { return root.panelOpen() ? "true" : "false" }
+    function check(): void { root.check() }
+  }
+
   function openRelease(app) {
     if (!app) return
     Qt.openUrlExternally(app.releaseUrl !== "" ? app.releaseUrl : app.url)
